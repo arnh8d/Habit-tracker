@@ -90,12 +90,12 @@ def mark_habit(id: int):
         if result is None:
             raise HTTPException(status_code=404, detail="Habit not found.")
 
-        # Преобразуем дату в строку ISO-формата
-        last_marked_str = result["last_marked_at"].isoformat()  # <-- Ключевое исправление
+
+        last_marked_str = result["last_marked_at"].isoformat()
         return HabitMarkResponse(
             id=result["id"],
             name=result["name"],
-            last_marked_at=last_marked_str,  # Теперь строка
+            last_marked_at=last_marked_str,
             streak=result["streak"],
         )
     except ValueError as e:

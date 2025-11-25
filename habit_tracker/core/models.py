@@ -2,12 +2,12 @@ from datetime import date
 from typing import List, Optional
 from pydantic import BaseModel, validator
 
-
 class Habit(BaseModel):
+
     id: int
     name: str
-    marks: List[date] = []  # По умолчанию — пустой список
-    streak: int = 0         # По умолчанию — 0
+    marks: List[date] = []
+    streak: int = 0
 
     @validator('name')
     def name_must_not_be_empty(cls, v):
@@ -16,6 +16,7 @@ class Habit(BaseModel):
         return v.strip()
 
 class HabitCreate(BaseModel):
+
     name: str
 
     @validator('name')
@@ -46,13 +47,5 @@ class HabitResponse(HabitBase):
 
 class HabitMarkResponse(HabitBase):
 
-    last_marked_at: str
+    last_marked_at: str  # Теперь строго строка (ISO-формат)
     streak: int
-
-class HabitListResponse(HabitResponse):
-
-    pass
-
-class HabitDetailResponse(HabitResponse):
-
-    pass

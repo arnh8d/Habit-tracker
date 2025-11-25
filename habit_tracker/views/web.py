@@ -1,3 +1,5 @@
+"""HTTP-роуты для веб-интерфейса (HTML-страницы)."""
+
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse  # Правильный импорт!
 from fastapi.templating import Jinja2Templates
@@ -52,3 +54,10 @@ def edit_habit_from_form(habit_id: int, name: str = Form(...)):
         pass
     return RedirectResponse(
         url=router.url_path_for("habit-detail", habit_id=habit_id),
+        status_code=303,
+    )
+
+@router.post("/habit/{habit_id}/delete", name="delete_habit_from_form")
+def delete_habit_from_form(habit_id: int):
+    services.delete_habit(habit_id)
+    return RedirectResponse(url=router.url_path_for("main-page"), status_code=303)

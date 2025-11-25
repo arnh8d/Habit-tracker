@@ -91,7 +91,7 @@ def mark_habit(id: int):
             raise HTTPException(status_code=404, detail="Habit not found.")
 
 
-        last_marked_str = result["last_marked_at"].isoformat()
+        last_marked_str = str(result["last_marked_at"].isoformat())
         return HabitMarkResponse(
             id=result["id"],
             name=result["name"],

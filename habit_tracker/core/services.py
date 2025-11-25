@@ -121,7 +121,7 @@ def mark_habit(habit_id: int) -> Optional[Dict]:
     return {
         "id": habit.id,
         "name": habit.name,
-        "last_marked_at": TODAY,  # Объект date (будет преобразован в API)
+        "last_marked_at": str(TODAY),
         "streak": streak,
     }
 

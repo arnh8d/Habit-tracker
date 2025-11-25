@@ -106,8 +106,8 @@ def delete_habit(habit_id: int) -> bool:
         return True
     return False
 
-def mark_habit(habit_id: int) -> Optional[dict]:
-
+def mark_habit(habit_id: int) -> Optional[Dict]:
+    """Отмечает привычку за TODAY."""
     habit = habits_db.get(habit_id)
     if habit is None:
         return None
@@ -121,9 +121,10 @@ def mark_habit(habit_id: int) -> Optional[dict]:
     return {
         "id": habit.id,
         "name": habit.name,
-        "last_marked_at": TODAY.isoformat(),
+        "last_marked_at": TODAY,
         "streak": streak,
     }
+
 
 def is_habit_marked_today(habit_id: int) -> bool:
     habit = habits_db.get(habit_id)

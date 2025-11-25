@@ -14,6 +14,7 @@ router = APIRouter()
 
 @router.post("/", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
 def create_habit(habit_data: HabitCreate):
+    """Создание привычки."""
     try:
         habit = services.create_habit(habit_data)
         return HabitResponse(
@@ -28,6 +29,7 @@ def create_habit(habit_data: HabitCreate):
 
 @router.get("/", response_model=List[HabitResponse])
 def get_all_habits():
+    """Список всех привычек."""
     habits = services.get_all_habits_with_details()
     return [
         HabitResponse(
@@ -38,8 +40,10 @@ def get_all_habits():
         ) for h in habits
     ]
 
+
 @router.get("/{id}/", response_model=HabitResponse)
 def get_habit(id: int):
+    """Получение одной привычки."""
     habit = services.get_habit_by_id_with_details(id)
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found.")
@@ -50,8 +54,10 @@ def get_habit(id: int):
         streak=habit["streak"],
     )
 
+
 @router.put("/{id}/", response_model=HabitResponse)
 def update_habit(id: int, habit_data: HabitUpdate):
+    """Обновление привычки."""
     try:
         updated_habit = services.update_habit(id, habit_data)
         if updated_habit is None:
@@ -69,11 +75,12 @@ def update_habit(id: int, habit_data: HabitUpdate):
 
 @router.delete("/{id}/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_habit(id: int):
+    """Удаление привычки."""
     success = services.delete_habit(id)
     if not success:
         raise HTTPException(status_code=404, detail="Habit not found.")
-
     return JSONResponse(content=None, status_code=204)
+
 
 @router.post("/{id}/mark/", response_model=HabitMarkResponse)
 def mark_habit(id: int):
@@ -82,10 +89,13 @@ def mark_habit(id: int):
         result = services.mark_habit(id)
         if result is None:
             raise HTTPException(status_code=404, detail="Habit not found.")
+
+        # Преобразуем дату в строку ISO-формата
+        last_marked_str = result["last_marked_at"].isoformat()  # <-- Ключевое исправление
         return HabitMarkResponse(
             id=result["id"],
             name=result["name"],
-            last_marked_at=result["last_marked_at"],
+            last_marked_at=last_marked_str,  # Теперь строка
             streak=result["streak"],
         )
     except ValueError as e:

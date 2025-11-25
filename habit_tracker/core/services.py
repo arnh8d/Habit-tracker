@@ -1,68 +1,145 @@
-"""Бизнес-логика для работы с привычками."""
-
-from datetime import date
-from typing import Dict, List
+from datetime import date, timedelta
+from typing import Dict, List, Optional
 from fastapi import HTTPException
-from habit_tracker.core.models import Habit
+from habit_tracker.core.models import Habit, HabitCreate, HabitUpdate
+
+TODAY = date(2025, 7, 12)
 
 
-# In-memory хранилище
-habits_db: Dict[int, Habit] = {}
-_next_id = 1
+habits_db: Dict[int, Habit] = {
+    1: Habit(id=1, name="Бег", marks=[date(2025, 7, 10), date(2025, 7, 11)]),
+    2: Habit(id=2, name="Чтение", marks=[date(2025, 7, 11)]),
+    3: Habit(id=3, name="Медитация", marks=[]),
+}
+next_habit_id = 4
 
 
 
-def create_habit(name: str) -> Habit:
-    """Создать новую привычку."""
-    global _next_id
+def calculate_streak(marks: List[date]) -> int:
+    if not marks:
+        return 0
 
-    # 1. Проверить, что name не пустое
-    if not name or not name.strip():
-        raise HTTPException(status_code=400, detail="Habit name cannot be empty.")
 
-    name = name.strip()
+    sorted_marks = sorted(set(marks), reverse=True)
 
-    # 2. Проверить, что привычка с таким именем не существует
+
+    yesterday = TODAY - timedelta(days=1)
+    if TODAY not in sorted_marks and yesterday not in sorted_marks:
+        return 0
+
+    streak = 0
+    current_day = TODAY
+    for mark in sorted_marks:
+        if mark == current_day:
+            streak += 1
+            current_day -= timedelta(days=1)
+        elif mark < current_day:
+            break
+
+    return streak
+
+
+
+def get_all_habits_with_details() -> List[Dict]:
+
+    result = []
     for habit in habits_db.values():
-        if habit.name == name:
-            raise HTTPException(status_code=400, detail="Habit with this name already exists.")
-
-    # 3. Создать объект Habit с текущим _next_id и name
-    habit = Habit(id=_next_id, name=name)
-
-    # 4. Сохранить в habits_db
-    habits_db[_next_id] = habit
-
-    # 5. Увеличить _next_id
-    _next_id += 1
-
-    # 6. Вернуть созданную привычку
-    return habit
+        streak = calculate_streak(habit.marks)
+        result.append({
+            "id": habit.id,
+            "name": habit.name,
+            "marks": habit.marks,
+            "streak": streak,
+        })
+    return sorted(result, key=lambda x: x["id"])
 
 
 
-def mark_habit(habit_id: int) -> Habit:
-    """Отметить выполнение привычки за текущий день."""
-    # 1. Получить привычку из habits_db по habit_id
+def get_habit_by_id_with_details(habit_id: int) -> Optional[Dict]:
+
     habit = habits_db.get(habit_id)
     if habit is None:
-        raise HTTPException(status_code=404, detail="Habit not found.")
+        return None
+    streak = calculate_streak(habit.marks)
+    return {
+        "id": habit.id,
+        "name": habit.name,
+        "marks": habit.marks,
+        "streak": streak,
+    }
 
-    # 2. Получить сегодняшнюю дату
-    today = date.today()
 
-    # 3. Проверить, что today не в habit.marks
-    if today in habit.marks:
-        raise HTTPException(status_code=400, detail="Habit already marked for today.")
 
-    # 4. Добавить today в habit.marks
-    habit.marks.append(today)
+def create_habit(habit_data: HabitCreate) -> Habit:
 
-    # 5. Вернуть обновленную привычку
+    global next_habit_id
+
+    name = habit_data.name.strip()
+    if not name:
+        raise ValueError("Habit name cannot be empty.")
+
+    for habit in habits_db.values():
+        if habit.name == name:
+            raise ValueError("Habit with this name already exists.")
+
+    habit = Habit(id=next_habit_id, name=name)
+    habits_db[next_habit_id] = habit
+    next_habit_id += 1
     return habit
 
 
 
-def get_all_habits() -> List[Habit]:
-    """Получить список всех привычек."""
-    return list(habits_db.values())
+def update_habit(habit_id: int, habit_data: HabitUpdate) -> Optional[Habit]:
+
+    habit = habits_db.get(habit_id)
+    if habit is None:
+        return None
+
+    new_name = habit_data.name.strip()
+    if not new_name:
+        raise ValueError("Habit name cannot be empty.")
+
+    for h in habits_db.values():
+        if h.name == new_name and h.id != habit_id:
+            raise ValueError("Habit with this name already exists.")
+
+    habit.name = new_name
+    return habit
+
+
+
+def delete_habit(habit_id: int) -> bool:
+
+    if habit_id in habits_db:
+        del habits_db[habit_id]
+        return True
+    return False
+
+
+
+def mark_habit(habit_id: int) -> Optional[Dict]:
+
+    habit = habits_db.get(habit_id)
+    if habit is None:
+        return None
+
+    if TODAY in habit.marks:
+        raise ValueError("Habit already marked for today.")
+
+    habit.marks.append(TODAY)
+    streak = calculate_streak(habit.marks)
+
+    return {
+        "id": habit.id,
+        "name": habit.name,
+        "last_marked_at": TODAY.isoformat(),
+        "streak": streak,
+    }
+
+
+
+def is_habit_marked_today(habit_id: int) -> bool:
+    habit = habits_db.get(habit_id)
+    if habit is None:
+        return False
+    return TODAY in habit.marks

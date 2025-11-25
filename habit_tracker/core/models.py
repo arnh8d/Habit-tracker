@@ -1,23 +1,20 @@
-"""Модели данных для привычек."""
-
 from datetime import date
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, validator
 
 
 
 class Habit:
-    """Внутренняя модель привычки для хранения в памяти."""
 
     def __init__(self, id: int, name: str):
         self.id = id
         self.name = name
         self.marks: List[date] = []
+        self.streak: int = 0  # Новое поле
 
 
 
 class HabitCreate(BaseModel):
-    """Модель для создания привычки."""
     name: str
 
     @validator('name')
@@ -28,23 +25,39 @@ class HabitCreate(BaseModel):
 
 
 
-class HabitResponse(BaseModel):
-    """Модель ответа после создания привычки."""
+class HabitUpdate(BaseModel):
+    name: str
+
+    @validator('name')
+    def name_must_not_be_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Habit name cannot be empty.")
+        return v.strip()
+
+
+
+class HabitBase(BaseModel):
     id: int
     name: str
 
 
 
-class HabitMarkResponse(BaseModel):
-    """Модель ответа после отметки выполнения привычки."""
-    id: int
-    name: str
+class HabitResponse(HabitBase):
+    marks: List[date]
+    streak: int
+
+
+
+class HabitMarkResponse(HabitBase):
     last_marked_at: str
+    streak: int
 
 
 
-class HabitListResponse(BaseModel):
-    """Модель для списка привычек."""
-    id: int
-    name: str
-    marks: List[str]
+class HabitListResponse(HabitResponse):
+    pass
+
+
+
+class HabitDetailResponse(HabitResponse):
+    pass

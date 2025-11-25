@@ -46,11 +46,12 @@ project_root/
 - Подключи роутер из модуля `habits`
 
 **Пример структуры:**
+
 ```python
 """Точка входа приложения Habit Tracker."""
 
 from fastapi import FastAPI
-from habit_tracker.api import habits
+from habit_tracker.api import habits_api
 
 # TODO: Создать экземпляр FastAPI
 app = ...

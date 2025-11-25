@@ -1,15 +1,11 @@
-"""HTTP-роуты для веб-интерфейса (HTML-страницы)."""
-
-
-from fastapi import APIRouter, Request, Form, RedirectResponse
+from fastapi import APIRouter, Request, Form
+from fastapi.responses import RedirectResponse  # Правильный импорт!
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import TemplateResponse
 from habit_tracker.core import services
 
-
 router = APIRouter()
 templates = Jinja2Templates(directory="habit_tracker/templates")
-
 
 @router.get("/", name="main-page")
 def main_page(request: Request):
@@ -29,7 +25,6 @@ def habit_detail(request: Request, habit_id: int):
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found.")
     return TemplateResponse("habit_detail.html", {"request": request, "habit": habit})
-
 
 @router.post("/habit/add", name="add_habit_from_form")
 def add_habit_from_form(name: str = Form(...)):
@@ -57,10 +52,3 @@ def edit_habit_from_form(habit_id: int, name: str = Form(...)):
         pass
     return RedirectResponse(
         url=router.url_path_for("habit-detail", habit_id=habit_id),
-        status_code=303,
-    )
-
-@router.post("/habit/{habit_id}/delete", name="delete_habit_from_form")
-def delete_habit_from_form(habit_id: int):
-    services.delete_habit(habit_id)
-    return RedirectResponse(url=router.url_path_for("main-page"), status_code=303)

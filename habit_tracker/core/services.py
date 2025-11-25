@@ -3,8 +3,8 @@ from typing import Dict, List, Optional
 from fastapi import HTTPException
 from habit_tracker.core.models import Habit, HabitCreate, HabitUpdate
 
-TODAY = date(2025, 7, 12)
 
+TODAY = date(2025, 7, 12)
 
 habits_db: Dict[int, Habit] = {
     1: Habit(id=1, name="Бег", marks=[date(2025, 7, 10), date(2025, 7, 11)]),
@@ -14,14 +14,11 @@ habits_db: Dict[int, Habit] = {
 next_habit_id = 4
 
 
-
 def calculate_streak(marks: List[date]) -> int:
     if not marks:
         return 0
 
-
     sorted_marks = sorted(set(marks), reverse=True)
-
 
     yesterday = TODAY - timedelta(days=1)
     if TODAY not in sorted_marks and yesterday not in sorted_marks:
@@ -38,10 +35,7 @@ def calculate_streak(marks: List[date]) -> int:
 
     return streak
 
-
-
 def get_all_habits_with_details() -> List[Dict]:
-
     result = []
     for habit in habits_db.values():
         streak = calculate_streak(habit.marks)
@@ -53,10 +47,7 @@ def get_all_habits_with_details() -> List[Dict]:
         })
     return sorted(result, key=lambda x: x["id"])
 
-
-
 def get_habit_by_id_with_details(habit_id: int) -> Optional[Dict]:
-
     habit = habits_db.get(habit_id)
     if habit is None:
         return None
@@ -68,10 +59,7 @@ def get_habit_by_id_with_details(habit_id: int) -> Optional[Dict]:
         "streak": streak,
     }
 
-
-
 def create_habit(habit_data: HabitCreate) -> Habit:
-
     global next_habit_id
 
     name = habit_data.name.strip()
@@ -82,15 +70,12 @@ def create_habit(habit_data: HabitCreate) -> Habit:
         if habit.name == name:
             raise ValueError("Habit with this name already exists.")
 
-    habit = Habit(id=next_habit_id, name=name)
+    habit = Habit(id=next_habit_id, name=name, marks=[])  # Явно задаём marks=[]
     habits_db[next_habit_id] = habit
     next_habit_id += 1
     return habit
 
-
-
 def update_habit(habit_id: int, habit_data: HabitUpdate) -> Optional[Habit]:
-
     habit = habits_db.get(habit_id)
     if habit is None:
         return None
@@ -106,19 +91,13 @@ def update_habit(habit_id: int, habit_data: HabitUpdate) -> Optional[Habit]:
     habit.name = new_name
     return habit
 
-
-
 def delete_habit(habit_id: int) -> bool:
-
     if habit_id in habits_db:
         del habits_db[habit_id]
         return True
     return False
 
-
-
 def mark_habit(habit_id: int) -> Optional[Dict]:
-
     habit = habits_db.get(habit_id)
     if habit is None:
         return None
@@ -136,10 +115,9 @@ def mark_habit(habit_id: int) -> Optional[Dict]:
         "streak": streak,
     }
 
-
-
 def is_habit_marked_today(habit_id: int) -> bool:
     habit = habits_db.get(habit_id)
     if habit is None:
         return False
     return TODAY in habit.marks
+

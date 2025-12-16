@@ -1,7 +1,8 @@
 from datetime import date, timedelta
 from typing import Dict, List, Optional
 from fastapi import HTTPException
-from habit_tracker.core.models import Habit, HabitCreate, HabitUpdate
+from habit_tracker.core.models import *
+from habit_tracker.core.exceptions import *
 
 
 TODAY = date(2025, 7, 12)
@@ -22,6 +23,21 @@ habits_db: Dict[int, Habit] = {
     3: Habit(id=3, name="Медитация", marks=[], streak=0),
 }
 next_habit_id = 4
+def calculate_max_streak(marks: list[date]) -> int:
+    if not marks:
+        return 0
+    sorted_dates = sorted(set(marks))
+    max_streak = 0
+    current_streak = 1
+
+    for i in range(1, len(sorted_dates)):
+        if (sorted_dates[i] - sorted_dates[i - 1]).days == 1:
+            current_streak += 1
+        else:
+            max_streak = max(max_streak, current_streak)
+            current_streak = 1
+    max_streak = max(max_streak, current_streak)
+    return max_streak
 
 def calculate_streak(marks: List[date]) -> int:
     if not marks:
@@ -74,7 +90,7 @@ def create_habit(habit_data: HabitCreate) -> Habit:
 
     for habit in habits_db.values():
         if habit.name == habit_data.name:
-            raise ValueError("Habit with this name already exists.")
+            raise HabitNameConflictException()
 
     habit = Habit(
         id=next_habit_id,
@@ -94,7 +110,7 @@ def update_habit(habit_id: int, habit_data: HabitUpdate) -> Optional[Habit]:
 
     for h in habits_db.values():
         if h.name == habit_data.name and h.id != habit_id:
-            raise ValueError("Habit with this name already exists.")
+            raise HabitNameConflictException()
 
     habit.name = habit_data.name
     return habit
@@ -113,7 +129,7 @@ def mark_habit(habit_id: int) -> Optional[Dict]:
         return None
 
     if TODAY in habit.marks:
-        raise ValueError("Habit already marked for today.")
+        raise HabitAlreadyMarkedTodayException()
 
     habit.marks.append(TODAY)
     streak = calculate_streak(habit.marks)

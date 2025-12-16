@@ -96,3 +96,16 @@ def mark_habit(id: int):
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+@router.get("/{habit_id}/stats/", response_model=HabitStatsResponse)
+def get_habit_stats(habit_id: int):
+    habit = get_habit(habit_id)
+    stats = services.calculate_streak(habit)
+    return HabitStatsResponse(
+        id=habit.id,
+        name=habit.name,
+        total_marks=stats["total_marks"],
+        current_streak=stats["current_streak"],
+        max_streak=stats["max_streak"],
+        success_rate=stats["success_rate"],
+        last_dates=stats["last_dates"]
+    )

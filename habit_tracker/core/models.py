@@ -1,7 +1,19 @@
 from datetime import date
 from typing import List, Optional
 from pydantic import BaseModel, validator
+class HabitStatsResponse(BaseModel):
+    id: int
+    name: str
+    total_marks: int
+    current_streak: int
+    max_streak: int
+    success_rate: float
+    last_dates: list[date]
 
+    class Config:
+        json_encoders = {
+            date: lambda v: v.isoformat()
+        }
 class Habit(BaseModel):
 
     id: int
@@ -47,5 +59,5 @@ class HabitResponse(HabitBase):
 
 class HabitMarkResponse(HabitBase):
 
-    last_marked_at: str  # Теперь строго строка (ISO-формат)
+    last_marked_at: str
     streak: int

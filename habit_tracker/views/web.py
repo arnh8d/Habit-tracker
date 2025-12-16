@@ -2,13 +2,13 @@ from fastapi import APIRouter, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from habit_tracker.core import services
-
+from habit_tracker.api.habits_api import *
 router1 = APIRouter()
 templates = Jinja2Templates(directory="habit_tracker/templates")
 
 @router1.get("/", name="main-page")
 def main_page(request: Request):
-    habits = services.get_all_habits_with_details()
+    habits = services.get_all_habits()
     return templates.TemplateResponse(
         "index.html",
         {
@@ -58,3 +58,25 @@ def edit_habit_from_form(habit_id: int, name: str = Form(...)):
 def delete_habit_from_form(habit_id: int):
     services.delete_habit(habit_id)
     return RedirectResponse(url=router1.url_path_for("main-page"), status_code=303)
+
+@router1.get("/stats/", name="stats-page", response_class=templates.TemplateResponse)
+def get_stats_page(request: Request):
+    habits = get_all_habits()
+    stats_data = []
+
+    for habit in habits:
+        stats = get_habit_stats(habit)
+        stats_data.append({
+            "id": habit.id,
+            "name": habit.name,
+            "total_marks": stats["total_marks"],
+            "current_streak": stats["current_streak"],
+            "max_streak": stats["max_streak"],
+            "success_rate": stats["success_rate"],
+            "last_dates": stats["last_dates"]
+        })
+
+    return templates.TemplateResponse(
+        "stats.html",
+        {"request": request, "stats": stats_data}
+    )

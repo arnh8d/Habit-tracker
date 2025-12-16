@@ -151,3 +151,46 @@ input[type="text"] {
     margin-top: 40px;
     font-size: 0.9em;
 }
+/* Статистика */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.habit-stats-card {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+.habit-stats-card h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: left;
+    color: #007bff;
+}
+
+.habit-stats-card p {
+    margin-bottom: 8px;
+}
+
+.habit-stats-card strong {
+    color: #555;
+}
+
+.last-marks-list {
+    list-style: disc;
+    margin-left: 20px;
+    margin-top: 10px;
+    max-height: 100px; /* Ограничиваем высоту для прокрутки */
+    overflow-y: auto; /* Добавляем прокрутку */
+    padding-right: 10px;
+}
+
+.last-marks-list li {
+    margin-bottom: 3px;
+    color: #666;
+}

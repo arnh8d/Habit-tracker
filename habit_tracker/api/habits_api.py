@@ -1,13 +1,9 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
+from habit_tracker.core.models import *
 from habit_tracker.core import services
-from habit_tracker.core.models import (
-    HabitCreate,
-    HabitUpdate,
-    HabitResponse,
-    HabitMarkResponse,
-)
+
 
 router = APIRouter()
 

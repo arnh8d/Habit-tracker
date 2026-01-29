@@ -1,11 +1,10 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
 from fastapi.responses import JSONResponse
 from habit_tracker.core import services, models
 from habit_tracker.core.exceptions import *
-
+from habit_tracker.db.session import SessionLocal, Habits
 
 router = APIRouter()
-
 
 @router.post("/", response_model=models.HabitResponse, status_code=status.HTTP_201_CREATED)
 def create_h(habit_data: models.HabitCreate):
@@ -15,19 +14,17 @@ def create_h(habit_data: models.HabitCreate):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @router.get("/", response_model=list[models.HabitResponse])
 def get_all_habits():
     habits = services.get_all_habits_with_details()
     return [
         models.HabitResponse(
-            id=h["id"],
-            name=h["name"],
-            marks=h["marks"],
-            streak=h["streak"],
+            id=h.id,
+            name=h.name,
+            marks=h.marks,
+            streak=h.streak,
         ) for h in habits
     ]
-
 
 @router.get("/{habit_id}", response_model=models.HabitResponse)
 def get_habit(habit_id: int):
@@ -35,10 +32,10 @@ def get_habit(habit_id: int):
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found.")
     return models.HabitResponse(
-        id=habit["id"],
-        name=habit["name"],
-        marks=habit["marks"],
-        streak=habit["streak"],
+        id=habit.id,
+        name=habit.name,
+        marks=habit.marks,
+        streak=habit.streak,
     )
 
 
@@ -73,25 +70,22 @@ def mark_h(habit_id: int):
         result = services.mark_habit(habit_id)
         if result is None:
             raise HTTPException(status_code=404, detail="Habit not found.")
-        last_marked_str = str(result["last_marked_at"].isoformat())
+        last_marked_str = str(result.last_marked_at)
         return models.HabitMarkResponse(
-            id=result["id"],
-            name=result["name"],
+            id=result.id,
+            name=result.name,
             last_marked_at=last_marked_str,
-            streak=result["streak"],
+            streak=result.streak,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 @router.get("/{habit_id}/stats", response_model=models.HabitStatsResponse)
 def get_habit_stats(habit_id: int):
     habit = services.get_habit_by_id_with_details(habit_id)
-    stats = services.calculate_streak(habit)
     return models.HabitStatsResponse(
         id=habit['id'],
         name=habit['name'],
-        total_marks=stats["total_marks"],
-        current_streak=stats["current_streak"],
-        max_streak=stats["max_streak"],
-        success_rate=stats["success_rate"],
-        last_dates=stats["last_dates"]
+        current_streak=services.calculate_streak(habit['marks']),
+        max_streak=services.calculate_max_streak(habit['marks']),
+        last_dates=habit['marks'][-1] if habit['marks'] else '-'
     )

@@ -5,16 +5,14 @@ from pydantic import BaseModel
 class HabitStatsResponse(BaseModel):
     id: int
     name: str
-    total_marks: int
     current_streak: int
     max_streak: int
-    success_rate: float
-    last_dates: list[date]
+    last_dates: str
 
 class Habit(BaseModel):
     id: int
     name: str
-    marks: List[date] = []
+    marks: List[str] = []
     streak: int = 0
 
 

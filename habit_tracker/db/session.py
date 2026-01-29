@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Float
+from sqlalchemy import create_engine, Column, Integer, String, JSON
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 from dotenv import load_dotenv
@@ -18,5 +18,6 @@ class Habits(BASE):
     __tablename__ = "habits"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
-    marks = Column(DateTime, nullable=False)
+    marks = Column(JSON, nullable=False, default=[])
     streak = Column(Integer, default=0)
+

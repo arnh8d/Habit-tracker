@@ -12,7 +12,7 @@ templates = Jinja2Templates(directory='habit_tracker/templates')
 @webrouter.get("/", name="main-page")
 def main_page(request: Request):
     habits = services.get_all_habits_with_details()
-    ids = [habit.id for habit in habits]
+    ids = [habit['id'] for habit in habits]
     return templates.TemplateResponse(
         "index.html",
         {
@@ -30,50 +30,48 @@ def habit_detail(request: Request, habit_id: int):
     return templates.TemplateResponse("habit_detail.html", {"request": request, "habit": habit})
 
 @webrouter.post("/habit/add", name="add_habit_from_form")
-def add_habit_from_form(name: str = Form(...)):
+def add_habit_from_form(request:Request,name: str = Form(...)):
     try:
         habit_data = models.HabitCreate(name=name)
         services.create_habit(habit_data)
     except ValueError:
         pass
-    return main_page()
+    return main_page(request)
 
 @webrouter.post("/habit/{habit_id}/mark")
-def mark_habit_from_form(habit_id: int):
+def mark_habit_from_form(request:Request,habit_id: int):
     try:
         services.mark_habit(habit_id)
     except ValueError:
         pass
-    return main_page()
+    return main_page(request)
 
 @webrouter.post("/habit/{habit_id}/edit")
-def edit_habit_from_form(habit_id: int, name: str = Form(...)):
+def edit_habit_from_form(request:Request,habit_id: int, name: str = Form(...)):
     try:
         habit_data = services.HabitUpdate(name=name)
         services.update_habit(habit_id, habit_data)
     except ValueError:
         pass
-    return main_page()
+    return main_page(request)
 
 @webrouter.post("/habit/{habit_id}/delete")
-def delete_habit_from_form(habit_id: int):
+def delete_habit_from_form(request:Request,habit_id: int):
     services.delete_habit(habit_id)
-    return main_page()
+    return main_page(request)
 
 @webrouter.get("/stats", name="stats-page", response_class=HTMLResponse)
 def get_stats_page(request: Request):
     habits = services.get_all_habits_with_details()
     stats_data = []
     for habit in habits:
-        stats = habits_api.get_habit_stats(habit)
+        stats = habits_api.get_habit_stats(habit['id'])
         stats_data.append({
-            "id": habit.id,
-            "name": habit.name,
-            "total_marks": stats["total_marks"],
-            "current_streak": stats["current_streak"],
-            "max_streak": stats["max_streak"],
-            "success_rate": stats["success_rate"],
-            "last_dates": stats["last_dates"]
+            "id": habit['id'],
+            "name": habit['name'],
+            "current_streak": stats.current_streak,
+            "max_streak": stats.max_streak,
+            "last_dates": stats.last_dates
         })
     return templates.TemplateResponse(
         "stats.html",

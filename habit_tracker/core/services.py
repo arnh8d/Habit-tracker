@@ -8,41 +8,49 @@ TODAY = datetime.date.today()
 def calculate_max_streak(marks: list[date]):
     if not marks:
         return 0
-    if len(marks) == 1:
+    elif len(marks) == 1:
         return 1
-    max_streak = 1
-    current_streak = 1
-    for i in range(1, len(marks)):
-        prev_date = marks[i - 1]
-        curr_date = marks[i]
-        delta = (curr_date - prev_date)
-        if delta == 1:
-            current_streak += 1
-        else:
-            current_streak = 1
-        max_streak = max(max_streak, current_streak)
-    return max_streak
+    else:
+        max_streak = 1
+        current_streak = 1
+        marks.sort(reverse=True)
+        for i in range(1, len(marks)):
+            prev_date = marks[i - 1]
+            curr_date = marks[i]
+            delta = (prev_date - curr_date).days
+            if delta == 1:
+                current_streak += 1
+            else:
+                current_streak = 1
+            max_streak = max(max_streak, current_streak)
+        return max_streak
 
 def calculate_streak(marks: list[date]):
-    if not marks:
+    if not marks or len(marks) == 0:
         return 0
-    current_date = TODAY
+    current_date = datetime.datetime.strptime(str(TODAY), "%Y-%m-%d")
     streak = 0
     while current_date in marks:
+
         streak += 1
-        current_date -= 1
+        current_date -= datetime.timedelta(days=1)
     return streak
 
 def get_all_habits_with_details():
     habits = SessionLocal()
-    return habits.query(Habits).all()
+    return [{
+        "id": habit.id,
+        "name": habit.name,
+        "marks": habit.marks,
+        "streak": calculate_streak(habit.marks)
+    } for habit in habits.query(Habits).all()]
 
 def get_habit_by_id_with_details(habit_id: int):
     habits = SessionLocal()
-    habit = habits.query(Habits).filter(Habit.id == habit_id).first()
+    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
         return None
-    streak = calculate_streak(habit.streak)
+    streak = calculate_streak(habit.marks)
     habits.close()
     return {
         "id": habit.id,
@@ -87,17 +95,25 @@ def mark_habit(habit_id: int):
     habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
         return None
-    if TODAY in habit.marks:
+    if datetime.datetime.strptime(str(TODAY), "%Y-%m-%d") in habit.marks:
         raise HabitAlreadyMarkedTodayException()
-    habit.marks.append(TODAY)
+    day = datetime.datetime.strptime(str(TODAY), "%Y-%m-%d")
+    habit.marks.append(day)
     streak = calculate_streak(habit.marks)
     habit.streak = streak
+    habits.commit()
     habits.close()
-    return habit
+    return {
+        'id':habit.id,
+        'marks':habit.marks,
+        'streak':streak
+                }
 
 def is_habit_marked_today(habit_id: int):
     habits = SessionLocal()
     habit = habits.query(Habits).filter(Habits.id == habit_id).first()
-    if habit is None:
+    if habit.marks is None:
         return False
-    return TODAY in habit.marks
+    elif habit.marks == []:
+        return False
+    return str(TODAY) in habit.marks[-1][:10]

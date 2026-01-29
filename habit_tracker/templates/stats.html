@@ -19,11 +19,10 @@
                         <p><strong>Всего выполнений:</strong> {{ habit_stats.total_marks }}</p>
                         <p><strong>Текущий streak:</strong> {{ habit_stats.current_streak }} дн.</p>
                         <p><strong>Максимальный streak:</strong> {{ habit_stats.max_streak }} дн.</p>
-                        <p><strong>Процент успешных дней:</strong> {{ "%.1f"|format(habit_stats.success_rate) }}%</p>
                         <p><strong>Последние отметки:</strong></p>
                         <ul class="last-marks-list">
                             {% for date in habit_stats.last_dates %}
-                                <li>{{ date.strftime('%Y-%m-%d') }}</li>
+                                <li>{{ date }}</li>
                             {% else %}
                                 <li>Нет последних отметок</li>
                             {% endfor %}

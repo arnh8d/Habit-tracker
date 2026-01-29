@@ -11,12 +11,7 @@ router = APIRouter()
 def create_h(habit_data: models.HabitCreate):
     try:
         habit = services.create_habit(habit_data)
-        return models.HabitResponse(
-            id=habit.id,
-            name=habit.name,
-            marks=habit.marks,
-            streak=services.calculate_streak(habit.marks),
-        )
+        return habit
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

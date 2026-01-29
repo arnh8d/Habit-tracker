@@ -1,22 +1,26 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from habit_tracker.api.habits_api import *
-from habit_tracker.views.web import router1
-from pathlib import Path
+from fastapi.responses import JSONResponse, RedirectResponse
+from habit_tracker.api.habits_api import router
+from habit_tracker.views.web import webrouter
 from habit_tracker.core.exceptions import (
     HabitNotFoundException,
     HabitAlreadyMarkedTodayException,
     HabitNameConflictException,
     InvalidInputException)
+from habit_tracker.db.session import BASE, engine
 
-app = FastAPI( title="Habit Tracker API")
+def create_table(e = engine):
+    BASE.metadata.create_all(bind = e)
 
-current_file_path = Path(__file__).resolve()
-static_path = current_file_path.parent / "static"
+create_table()
 
-app.mount("/static", StaticFiles(directory=static_path), name="static")
-app.include_router(router1, tags=["Web Interface"])
-app.include_router(router, prefix="/api/habits", tags=["Habits API"])
+app = FastAPI( title="Habit Tracker")
+
+app.mount("/static", StaticFiles(directory='habit_tracker/static'), name="static")
+
+app.include_router(webrouter)
+app.include_router(router, prefix="/api/habits")
 
 @app.exception_handler(HabitNotFoundException)
 async def habit_not_found_exception_handler(request: Request, exc: HabitNotFoundException):

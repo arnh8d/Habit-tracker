@@ -1,148 +1,103 @@
-from datetime import date, timedelta
-from typing import Dict, List, Optional
-from fastapi import HTTPException
+import datetime
 from habit_tracker.core.models import *
 from habit_tracker.core.exceptions import *
+from habit_tracker.db.session import SessionLocal, Habits
 
+TODAY = datetime.date.today()
 
-TODAY = date(2025, 7, 12)
-
-habits_db: Dict[int, Habit] = {
-    1: Habit(
-        id=1,
-        name="Бег",
-        marks=[date(2025, 7, 10), date(2025, 7, 11)],
-        streak=0
-    ),
-    2: Habit(
-        id=2,
-        name="Чтение",
-        marks=[date(2025, 7, 11)],
-        streak=0
-    ),
-    3: Habit(id=3, name="Медитация", marks=[], streak=0),
-}
-next_habit_id = 4
-def calculate_max_streak(marks: list[date]) -> int:
+def calculate_max_streak(marks: list[date]):
     if not marks:
         return 0
-    sorted_dates = sorted(set(marks))
-    max_streak = 0
+    if len(marks) == 1:
+        return 1
+    max_streak = 1
     current_streak = 1
-
-    for i in range(1, len(sorted_dates)):
-        if (sorted_dates[i] - sorted_dates[i - 1]).days == 1:
+    for i in range(1, len(marks)):
+        prev_date = marks[i - 1]
+        curr_date = marks[i]
+        delta = (curr_date - prev_date)
+        if delta == 1:
             current_streak += 1
         else:
-            max_streak = max(max_streak, current_streak)
             current_streak = 1
-    max_streak = max(max_streak, current_streak)
+        max_streak = max(max_streak, current_streak)
     return max_streak
 
-def calculate_streak(marks: List[date]) -> int:
+def calculate_streak(marks: list[date]):
     if not marks:
         return 0
-
-    sorted_marks = sorted(set(marks), reverse=True)
-    yesterday = TODAY - timedelta(days=1)
-
-    if TODAY not in sorted_marks and yesterday not in sorted_marks:
-        return 0
-
+    current_date = TODAY
     streak = 0
-    current_day = TODAY
-    for mark in sorted_marks:
-        if mark == current_day:
-            streak += 1
-            current_day -= timedelta(days=1)
-        elif mark < current_day:
-            break
+    while current_date in marks:
+        streak += 1
+        current_date -= 1
     return streak
 
-def get_all_habits_with_details() -> List[dict]:
-    result = []
-    for habit in habits_db.values():
-        streak = calculate_streak(habit.marks)
-        result.append({
-            "id": habit.id,
-            "name": habit.name,
-            "marks": habit.marks,
-            "streak": streak,
-        })
-    return sorted(result, key=lambda x: x["id"])
+def get_all_habits_with_details():
+    habits = SessionLocal()
+    return habits.query(Habits).all()
 
-def get_habit_by_id_with_details(habit_id: int) -> Optional[dict]:
-
-    habit = habits_db.get(habit_id)
+def get_habit_by_id_with_details(habit_id: int):
+    habits = SessionLocal()
+    habit = habits.query(Habits).filter(Habit.id == habit_id).first()
     if habit is None:
         return None
-    streak = calculate_streak(habit.marks)
+    streak = calculate_streak(habit.streak)
+    habits.close()
     return {
         "id": habit.id,
         "name": habit.name,
         "marks": habit.marks,
-        "streak": streak,
+        "streak": streak
     }
 
-def create_habit(habit_data: HabitCreate) -> Habit:
-
-    global next_habit_id
-
-    for habit in habits_db.values():
-        if habit.name == habit_data.name:
+def create_habit(habit_data: HabitCreate):
+    habits = SessionLocal()
+    if habits.query(Habits).filter(Habits.name == habit_data.name).first():
             raise HabitNameConflictException()
-
-    habit = Habit(
-        id=next_habit_id,
-        name=habit_data.name,
-        marks=[],
-        streak=0
-    )
-    habits_db[next_habit_id] = habit
-    next_habit_id += 1
+    habit = Habits(name=habit_data.name, marks=habit_data.marks)
+    habits.add(habit)
+    habits.commit()
+    habits.close()
     return habit
 
-def update_habit(habit_id: int, habit_data: HabitUpdate) -> Optional[Habit]:
-    habit = habits_db.get(habit_id)
+def update_habit(habit_id: int, habit_data: HabitUpdate):
+    habits = SessionLocal()
+    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
         return None
+    if habit.name == habit_data.name:
+        habits.close()
+        raise HabitNameConflictException()
+    else:
+        habit.name = habit_data.name
+        habits.close()
+        return habit
 
-
-    for h in habits_db.values():
-        if h.name == habit_data.name and h.id != habit_id:
-            raise HabitNameConflictException()
-
-    habit.name = habit_data.name
-    return habit
-
-def delete_habit(habit_id: int) -> bool:
-
-    if habit_id in habits_db:
-        del habits_db[habit_id]
+def delete_habit(habit_id: int):
+    habits = SessionLocal()
+    if habit_id in habits:
+        del habits[habit_id]
         return True
+    habits.close()
     return False
 
-def mark_habit(habit_id: int) -> Optional[Dict]:
-    """Отмечает привычку за TODAY."""
-    habit = habits_db.get(habit_id)
+def mark_habit(habit_id: int):
+    habits = SessionLocal()
+    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
         return None
-
     if TODAY in habit.marks:
         raise HabitAlreadyMarkedTodayException()
-
     habit.marks.append(TODAY)
     streak = calculate_streak(habit.marks)
+    habit.streak = streak
+    habits.close()
+    return habit
 
-    return {
-        "id": habit.id,
-        "name": habit.name,
-        "last_marked_at": str(TODAY),
-        "streak": streak,
-    }
-
-def is_habit_marked_today(habit_id: int) -> bool:
-    habit = habits_db.get(habit_id)
+def is_habit_marked_today(habit_id: int):
+    habits = SessionLocal()
+    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
         return False
     return TODAY in habit.marks

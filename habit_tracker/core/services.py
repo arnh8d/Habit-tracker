@@ -114,19 +114,13 @@ def mark_habit(habit_id: int):
         return None
     if today_dt in habit.marks:
         raise HabitAlreadyMarkedTodayException()
-    habits.query(Habits).filter(Habits.id == habit_id).first().marks.append(today_dt)
+    habit.marks.append(today_dt)
     habits.commit()
-    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     streak = calculate_streak(habit.marks)
     habit.streak = streak
     habits.commit()
-    result = {
-        'id': habit.id,
-        'marks': habit.marks,
-        'streak': habit.streak
-                }
     habits.close()
-    return result
+    return True
 
 def is_habit_marked_today(habit_id: int):
     habit = get_habit_by_id_with_details(habit_id)
@@ -134,5 +128,5 @@ def is_habit_marked_today(habit_id: int):
         return False
     elif habit['marks'] == []:
         return False
-    return TODAY in habit['marks']
+    return TODAY in [m.date() for m in habit['marks']]
 

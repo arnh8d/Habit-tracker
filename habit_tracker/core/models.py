@@ -9,11 +9,8 @@ class HabitStatsResponse(BaseModel):
     max_streak: int
     last_dates: str
 
-class Habit(BaseModel):
-    id: int
-    name: str
-    marks: List[str] = []
-    streak: int = 0
+
+
 
 
 class HabitCreate(BaseModel):
@@ -28,10 +25,3 @@ class HabitBase(BaseModel):
     id: int
     name: str
 
-class HabitResponse(HabitBase):
-    marks: List[date]
-    streak: int
-
-class HabitMarkResponse(HabitBase):
-    last_marked_at: str
-    streak: int

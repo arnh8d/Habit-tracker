@@ -48,34 +48,22 @@ def calculate_streak(marks: list[date]):
 
 def get_all_habits_with_details():
     habits = SessionLocal()
-    return [{
-        "id": habit.id,
-        "name": habit.name,
-        "marks": habit.marks,
-        "streak": calculate_streak(habit.marks)
-    } for habit in habits.query(Habits).all()]
+    try:
+        return [{
+            "id": habit.id,
+            "name": habit.name,
+            "marks": habit.marks,
+            "streak": habit.streak
+        } for habit in habits.query(Habits).all()]
+    finally:
+        habits.close()
 
 def get_habit_by_id_with_details(habit_id: int):
     habits = SessionLocal()
     habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
         return None
-    streak = calculate_streak(habit.marks)
     habits.close()
-    return {
-        "id": habit.id,
-        "name": habit.name,
-        "marks": habit.marks,
-        "streak": streak
-    }
-
-def create_habit(habit_data: HabitCreate):
-    habits = SessionLocal()
-    if habits.query(Habits).filter(Habits.name == habit_data.name).first():
-            raise HabitNameConflictException()
-    habit = Habits(name=habit_data.name)
-    habits.add(habit)
-    habits.commit()
     return {
         "id": habit.id,
         "name": habit.name,
@@ -83,10 +71,28 @@ def create_habit(habit_data: HabitCreate):
         "streak": habit.streak
     }
 
+def create_habit(habit_data: HabitCreate):
+    habits = SessionLocal()
+    try:
+        if habits.query(Habits).filter(Habits.name == habit_data.name).first():
+                raise HabitNameConflictException()
+        habit = Habits(name=habit_data.name)
+        habits.add(habit)
+        habits.commit()
+        return {
+            "id": habit.id,
+            "name": habit.name,
+            "marks": habit.marks,
+            "streak": habit.streak
+        }
+    finally:
+        habits.close()
+
 def update_habit(habit_id: int, habit_data: HabitUpdate):
     habits = SessionLocal()
     habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
+        habits.close()
         print(None)
         return None
     if habit.name == habit_data.name:

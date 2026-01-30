@@ -4,42 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Трекер привычек</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <div class="container">
         <h1>Мои привычки</h1>
 
-        {% if error %}
-            <p class="error-message">{{ error }}</p>
-        {% endif %}
-
-        <form action="/habits" method="post" class="add-habit-form">
-            <input type="text" name="name" placeholder="Новая привычка" required>
-            <button type="submit">Добавить</button>
-        </form>
-
-        <ul class="habit-list">
-            {% for habit in habits %}
-                <li class="habit-item">
-                    <a href="/habit/{{ habit.id }}/" class="habit-link">
-                        {{ habit.name }} (Streak: {{ habit.streak }})
-                    </a>
-                    {% if not habit.marked_today %}
-                        <form action="/habit/{{ habit.id }}/mark/" method="post" style="display: inline;">
-                            <button type="submit" class="mark-button">Выполнил сегодня</button>
-                        </form>
-                    {% else %}
-                        <span class="marked-today-message">Отмечено сегодня!</span>
-                    {% endif %}
-                </li>
+        <div class="habit-list">
+            {% if habits %}
+                {% for habit in habits %}
+                <div class="habit-item">
+                    <div class="habit-info">
+                        <a href="{{ url_for('habit-detail', habit_id=habit.id) }}">{{ habit.name }}</a>
+                        <span class="streak" title="Дней подряд">🔥 {{ habit.streak }}</span>
+                    </div>
+                    <div class="habit-actions">
+                        {% if not is_marked_today[habit.id] %}
+                            <form action="{{ url_for('mark_habit_from_form', habit_id=habit.id) }}" method="post">
+                                <button type="submit" class="btn btn-mark">Выполнил сегодня</button>
+                            </form>
+                        {% else %}
+                            <span class="marked-today">✅ Отмечено!</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
             {% else %}
                 <p>У вас пока нет привычек. Добавьте первую!</p>
-            {% endfor %}
-        </ul>
+            {% endif %}
+        </div>
 
-        <p><a href="/stats/" class="stats-link">Посмотреть статистику</a></p>
+        <div class="add-habit-form">
+            <h2>Добавить новую привычку</h2>
+            <form action="{{ url_for('add_habit_from_form') }}" method="post">
+                <input type="text" name="name" placeholder="Название привычки" required>
+                <button type="submit" class="btn">Добавить</button>
+            </form>
+        </div>
+        <div class="api-docs-link">
+            <a href="/docs">Документация API (Swagger)</a>
+        </div>
     </div>
-    <script src="{{ url_for('static', path='js/script.js') }}"></script>
 </body>
 </html>

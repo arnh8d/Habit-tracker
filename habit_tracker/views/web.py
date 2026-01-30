@@ -2,7 +2,6 @@ from fastapi import APIRouter, Request, Form
 from fastapi.templating import Jinja2Templates
 from starlette.responses import HTMLResponse
 from habit_tracker.core import services, models, exceptions
-from habit_tracker.api import habits_api
 
 webrouter = APIRouter()
 
@@ -12,13 +11,16 @@ templates = Jinja2Templates(directory='habit_tracker/templates')
 @webrouter.get("/", name="main-page")
 def main_page(request: Request):
     habits = services.get_all_habits_with_details()
-    ids = [habit['id'] for habit in habits]
+    is_marked_map = {
+        habit['id']: services.is_habit_marked_today(habit['id'])
+        for habit in habits
+    }
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
             "habits": habits,
-            "is_marked_today": [services.is_habit_marked_today(hid) for hid in ids],
+            "is_marked_today": is_marked_map,
         },
     )
 
@@ -51,13 +53,17 @@ def edit_habit_from_form(request:Request,habit_id: int, name: str = Form(...)):
     try:
         habit_data = services.HabitUpdate(name=name)
         services.update_habit(habit_id, habit_data)
+        habit = services.get_habit_by_id_with_details(habit_id)
     except ValueError:
         pass
-    return main_page(request)
+    return templates.TemplateResponse('habit_detail.html', {"request": request, "habit": habit})
 
 @webrouter.post("/habit/{habit_id}/delete")
 def delete_habit_from_form(request:Request,habit_id: int):
-    services.delete_habit(habit_id)
+    try:
+        services.delete_habit(habit_id)
+    except ValueError:
+        pass
     return main_page(request)
 
 @webrouter.get("/stats", name="stats-page", response_class=HTMLResponse)
@@ -65,7 +71,7 @@ def get_stats_page(request: Request):
     habits = services.get_all_habits_with_details()
     stats_data = []
     for habit in habits:
-        stats = habits_api.get_habit_stats(habit['id'])
+        stats = services.get_habit_stats(habit['id'])
         stats_data.append({
             "id": habit['id'],
             "name": habit['name'],

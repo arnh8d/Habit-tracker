@@ -5,6 +5,16 @@ from habit_tracker.db.session import SessionLocal, Habits
 
 TODAY = datetime.date.today()
 
+def get_habit_stats(habit_id: int):
+    habit = get_habit_by_id_with_details(habit_id)
+    return HabitStatsResponse(
+        id=habit['id'],
+        name=habit['name'],
+        current_streak=calculate_streak(habit['marks']),
+        max_streak=calculate_max_streak(habit['marks']),
+        last_dates=habit['marks'][-1] if habit['marks'] else '-'
+    )
+
 def calculate_max_streak(marks: list[date]):
     if not marks:
         return 0
@@ -15,8 +25,8 @@ def calculate_max_streak(marks: list[date]):
         current_streak = 1
         marks.sort(reverse=True)
         for i in range(1, len(marks)):
-            prev_date = marks[i - 1]
-            curr_date = marks[i]
+            prev_date = marks[i - 1].date()
+            curr_date = marks[i].date()
             delta = (prev_date - curr_date).days
             if delta == 1:
                 current_streak += 1
@@ -63,57 +73,66 @@ def create_habit(habit_data: HabitCreate):
     habits = SessionLocal()
     if habits.query(Habits).filter(Habits.name == habit_data.name).first():
             raise HabitNameConflictException()
-    habit = Habits(name=habit_data.name, marks=habit_data.marks)
+    habit = Habits(name=habit_data.name)
     habits.add(habit)
     habits.commit()
-    habits.close()
-    return habit
+    return {
+        "id": habit.id,
+        "name": habit.name,
+        "marks": habit.marks,
+        "streak": habit.streak
+    }
 
 def update_habit(habit_id: int, habit_data: HabitUpdate):
     habits = SessionLocal()
     habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     if habit is None:
+        print(None)
         return None
     if habit.name == habit_data.name:
         habits.close()
         raise HabitNameConflictException()
     else:
         habit.name = habit_data.name
+        habits.commit()
+        print(habits.query(Habits).filter(Habits.id == habit_id).first())
         habits.close()
-        return habit
+        return True
 
 def delete_habit(habit_id: int):
     habits = SessionLocal()
-    if habit_id in habits:
-        del habits[habit_id]
-        return True
+    habits.query(Habits).filter(Habits.id == habit_id).delete()
+    habits.commit()
     habits.close()
-    return False
+    return True
 
 def mark_habit(habit_id: int):
     habits = SessionLocal()
     habit = habits.query(Habits).filter(Habits.id == habit_id).first()
+    today_dt = datetime.datetime.combine(TODAY, datetime.time())
     if habit is None:
         return None
-    if datetime.datetime.strptime(str(TODAY), "%Y-%m-%d") in habit.marks:
+    if today_dt in habit.marks:
         raise HabitAlreadyMarkedTodayException()
-    day = datetime.datetime.strptime(str(TODAY), "%Y-%m-%d")
-    habit.marks.append(day)
+    habits.query(Habits).filter(Habits.id == habit_id).first().marks.append(today_dt)
+    habits.commit()
+    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     streak = calculate_streak(habit.marks)
     habit.streak = streak
     habits.commit()
-    habits.close()
-    return {
-        'id':habit.id,
-        'marks':habit.marks,
-        'streak':streak
+    result = {
+        'id': habit.id,
+        'marks': habit.marks,
+        'streak': habit.streak
                 }
+    habits.close()
+    return result
 
 def is_habit_marked_today(habit_id: int):
-    habits = SessionLocal()
-    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
-    if habit.marks is None:
+    habit = get_habit_by_id_with_details(habit_id)
+    if habit['marks'] is None:
         return False
-    elif habit.marks == []:
+    elif habit['marks'] == []:
         return False
-    return str(TODAY) in habit.marks[-1][:10]
+    return TODAY in habit['marks']
+

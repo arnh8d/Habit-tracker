@@ -38,6 +38,8 @@ async function markHabit(habitId) {
  * @param {number} habitId - ID привычки
  * @param {Object} data - Ответ API (id, name, streak, last_marked_at)
  */
+
+
 function updateHabitUI(habitId, data) {
     // Обновляем streak
     const streakElement = document.querySelector(`[data-habit-id="${habitId}"] .streak`);
@@ -57,35 +59,18 @@ function updateHabitUI(habitId, data) {
  * @param {number} habitId - ID привычки
  * @param {string} newName - Новое название
  */
-async function updateHabitName(habitId, newName) {
-    try {
-        const response = await fetch(`/api/habits/${habitId}/`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name: newName })
-        });
+function updateHabit(habitId) {
+    const form = document.getElementById('update-form');
+    const name = form.querySelector('input[name="name"]').value;
 
-        if (!response.ok) {
-            if (response.status === 400) {
-                alert('Название не может быть пустым или уже существует.');
-            } else if (response.status === 404) {
-                alert('Привычка не найдена.');
-            } else {
-                alert(`Ошибка сервера: ${response.statusText}`);
-            }
-            return;
-        }
-
-        // Перезагружаем страницу для обновления данных
-        window.location.reload();
-
-
-    } catch (error) {
-        console.error('Ошибка при обновлении названия:', error);
-        alert('Произошла сетевая ошибка. Попробуйте снова.');
-    }
+    fetch(`/${habitId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+    })
+    .then(response => response.json())
+    .then(data => console.log('Успешно:', data))
+    .catch(err => console.error('Ошибка:', err));
 }
 
 /**
@@ -98,7 +83,15 @@ async function deleteHabit(habitId) {
             method: 'DELETE'
         });
 
-        if (!response.ok) {
+        if (response.status === 204) {
+            const habitItem = document.querySelector(`[data-habit-id="${habitId}"]`);
+            if (habitItem) {
+                habitItem.remove();
+            }
+            return;
+        }
+
+         if (!response.ok) {
             if (response.status === 404) {
                 alert('Привычка не найдена.');
             } else {

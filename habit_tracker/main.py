@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse
-from habit_tracker.api.habits_api import router
 from habit_tracker.views.web import webrouter
 from habit_tracker.core.exceptions import (
     HabitNotFoundException,
@@ -20,7 +19,6 @@ app = FastAPI( title="Habit Tracker")
 app.mount("/static", StaticFiles(directory='habit_tracker/static'), name="static")
 
 app.include_router(webrouter)
-app.include_router(router, prefix="/api/habits")
 
 @app.exception_handler(HabitNotFoundException)
 async def habit_not_found_exception_handler(request: Request, exc: HabitNotFoundException):

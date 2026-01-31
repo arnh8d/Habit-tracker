@@ -1,6 +1,0 @@
-fastapi==0.104.1
-uvicorn[standard]
-pydantic
-python-dotenv
-jinja2==3.1.2
-python-multipart==0.0.6

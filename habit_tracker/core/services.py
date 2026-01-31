@@ -115,8 +115,8 @@ def delete_habit(habit_id: int):
     return True
 
 def mark_habit(habit_id: int):
-    db = SessionLocal()
-    habit = db.query(Habits).filter(Habits.id == habit_id).first()
+    habits = SessionLocal()
+    habit = habits.query(Habits).filter(Habits.id == habit_id).first()
     today_str = datetime.date.today().strftime('%Y-%m-%d')
     marks_list = habit.marks
     if not isinstance(marks_list, list):
@@ -127,10 +127,10 @@ def mark_habit(habit_id: int):
     streak = calculate_streak(marks_list)
     habit.marks = marks_list
     habit.streak = streak
-    db.add(habit)
-    db.flush()
-    db.commit()
-    db.close()
+    habits.add(habit)
+    habits.flush()
+    habits.commit()
+    habits.close()
     return True
 
 def is_habit_marked_today(habit_id: int):

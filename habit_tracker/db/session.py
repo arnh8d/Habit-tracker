@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String, JSON
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.types import JSON
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 import os
+from sqlalchemy.ext.mutable import MutableList
 
 load_dotenv()
 
@@ -19,6 +21,6 @@ class Habits(BASE):
     __tablename__ = "habits"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
-    marks = Column(JSON, nullable=False, default= lambda : [])
+    marks = Column(MutableList.as_mutable(JSON), default= lambda : [])
     streak = Column(Integer, default=0)
 

@@ -5,7 +5,6 @@ from habit_tracker.core import services, models, exceptions
 
 webrouter = APIRouter()
 
-
 templates = Jinja2Templates(directory='habit_tracker/templates')
 
 @webrouter.get("/", name="main-page")
@@ -28,42 +27,30 @@ def main_page(request: Request):
 def habit_detail(request: Request, habit_id: int):
     habit = services.get_habit_by_id_with_details(habit_id)
     if habit is None:
-        raise exceptions.HTTPException(status_code=404, detail="Habit not found.")
+        raise exceptions.HabitNotFoundException()
     return templates.TemplateResponse("habit_detail.html", {"request": request, "habit": habit})
 
 @webrouter.post("/habit/add", name="add_habit_from_form")
 def add_habit_from_form(request:Request,name: str = Form(...)):
-    try:
-        habit_data = models.HabitCreate(name=name)
-        services.create_habit(habit_data)
-    except ValueError:
-        pass
+    habit_data = models.HabitCreate(name=name)
+    services.create_habit(habit_data)
     return main_page(request)
 
 @webrouter.post("/habit/{habit_id}/mark")
 def mark_habit_from_form(request:Request,habit_id: int):
-    try:
-        services.mark_habit(habit_id)
-    except ValueError:
-        pass
+    services.mark_habit(habit_id)
     return main_page(request)
 
 @webrouter.post("/habit/{habit_id}/edit")
 def edit_habit_from_form(request:Request,habit_id: int, name: str = Form(...)):
-    try:
-        habit_data = services.HabitUpdate(name=name)
-        services.update_habit(habit_id, habit_data)
-        habit = services.get_habit_by_id_with_details(habit_id)
-    except ValueError:
-        pass
+    habit_data = services.HabitUpdate(name=name)
+    services.update_habit(habit_id, habit_data)
+    habit = services.get_habit_by_id_with_details(habit_id)
     return templates.TemplateResponse('habit_detail.html', {"request": request, "habit": habit})
 
 @webrouter.post("/habit/{habit_id}/delete")
 def delete_habit_from_form(request:Request,habit_id: int):
-    try:
-        services.delete_habit(habit_id)
-    except ValueError:
-        pass
+    services.delete_habit(habit_id)
     return main_page(request)
 
 @webrouter.get("/stats", name="stats-page", response_class=HTMLResponse)

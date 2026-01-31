@@ -1,5 +1,3 @@
-from datetime import date
-from typing import List
 from pydantic import BaseModel
 
 class HabitStatsResponse(BaseModel):
@@ -7,21 +5,14 @@ class HabitStatsResponse(BaseModel):
     name: str
     current_streak: int
     max_streak: int
-    last_dates: str
-
-
-
-
+    last_dates: list
 
 class HabitCreate(BaseModel):
     name: str
 
-
 class HabitUpdate(BaseModel):
     name: str
-
 
 class HabitBase(BaseModel):
     id: int
     name: str
-

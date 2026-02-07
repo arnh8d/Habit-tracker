@@ -38,6 +38,10 @@ ___
 │   │   ├── css/style.css           
 │   │   └── js/script.js
 │   │
+│   ├── db/
+│   │   ├── __init__.py          
+│   │   └──session.py 
+│   │
 │   └── main.py                     
 │
 ├── requirements.txt
